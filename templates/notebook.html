@@ -1,0 +1,179 @@
+<!-- templates/notebook.html -->
+{% extends 'base.html' %}
+{% block sidebar %}
+<div class="sidebar">
+    <div class="sidebar-header">
+        <h3><i class="fas fa-book"></i> Notebooks</h3>
+    </div>
+    <div class="notebooks-list">
+        <h5>Your Notebooks</h5>
+        {% for nb in notebooks %}
+        <div class="notebook-card {% if nb['id'] == nb_id %}active{% endif %}">
+            <a href="{{ url_for('notebook', nb_id=nb['id']) }}">
+                {{ nb['subject'] }}
+            </a>
+            <div class="notebook-meta">
+                <small class="text-muted">
+                    <i class="fas fa-file-pdf"></i> {{ nb.get('count', 0) }} sources
+                </small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="create-notebook-form">
+        <form method="POST" action="{{ url_for('create_notebook') }}">
+            <input type="text" name="subject" placeholder="Enter notebook name" class="form-control" required>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i> Create Notebook
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block main %}
+<div class="main">
+    <div class="header">
+        <div>
+            <h4>{{ subject }}</h4>
+            <small class="text-muted">{{ materials|length }} source{{ 's' if materials|length != 1 else '' }}</small>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-outline-primary" onclick="document.querySelector('input[type=file]').click()">
+                <i class="fas fa-plus me-2"></i> Add Sources
+            </button>
+        </div>
+    </div>
+    <div class="content">
+        <div class="sources-panel">
+            <div class="sources-header">
+                <h6><i class="fas fa-file-alt me-2"></i> Sources</h6>
+            </div>
+            <div class="sources-content">
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <div class="upload-section">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Upload PDF documents to add context</p>
+                        <input type="file" name="pdf" accept=".pdf" multiple class="d-none" id="pdfUpload">
+                        <button type="button" class="btn btn-primary"
+                            onclick="document.getElementById('pdfUpload').click()">
+                            <i class="fas fa-upload me-2"></i> Select PDFs
+                        </button>
+                        <small class="d-block mt-2 text-muted">Multiple files allowed</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 d-none" id="uploadBtn">
+                        <i class="fas fa-paper-plane me-2"></i> Upload Files
+                    </button>
+                </form>
+
+                {% if materials %}
+                <h6 class="mt-4 mb-3">Uploaded Documents</h6>
+                <ul class="materials-list">
+                    {% for mat in materials %}
+                    <li class="material-item">
+                        <i class="fas fa-file-pdf"></i>
+                        <span class="material-name">{{ mat }}</span>
+                        <small class="text-muted">PDF</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <h4>No sources added</h4>
+                    <p>Upload PDF documents to provide context for the AI</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="chat-container">
+            <div class="chat-history" id="chatHistory">
+                {% if chat_history %}
+                {% for msg, is_user in chat_history %}
+                <div class="chat-message {{ 'user-message' if is_user else 'ai-message' }}">
+                    {% if is_user %}
+                    <div class="message-header">
+                        <div class="avatar">Y</div>
+                        <div class="name">You</div>
+                    </div>
+                    {% else %}
+                    <div class="message-header">
+                        <div class="avatar">AI</div>
+                        <div class="name">Notebook AI</div>
+                    </div>
+                    {% endif %}
+                    <div class="message-content">{{ msg | safe }}</div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="welcome-screen">
+                    <i class="fas fa-comments"></i>
+                    <h3>Start chatting with your notebook</h3>
+                    <p>Ask questions about your documents or request summaries. The AI will respond based on the context
+                        you've provided.</p>
+                    <div class="mt-4">
+                        <div class="badge badge-primary me-2">Context-Aware</div>
+                        <div class="badge badge-secondary me-2">Document-Based</div>
+                        <div class="badge badge-secondary">Real-time Responses</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="chat-input-container">
+                <form method="POST" id="chatForm">
+                    <div class="chat-input-wrapper">
+                        <input type="text" name="message" placeholder="Ask a question about your documents..."
+                            class="form-control" required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const pdfUpload = document.getElementById('pdfUpload');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = chatForm.querySelector('input[name="message"]');
+
+        // Show upload button when files are selected
+        if (pdfUpload) {
+            pdfUpload.addEventListener('change', function () {
+                if (this.files.length > 0) {
+                    uploadBtn.classList.remove('d-none');
+                } else {
+                    uploadBtn.classList.add('d-none');
+                }
+            });
+        }
+
+        // Auto-focus chat input
+        if (chatInput) {
+            chatInput.focus();
+        }
+
+        // Form submission handling
+        if (chatForm) {
+            chatForm.addEventListener('submit', function () {
+                const button = this.querySelector('button[type="submit"]');
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            });
+        }
+
+        // Scroll to bottom of chat
+        scrollToBottom();
+    });
+
+    function scrollToBottom() {
+        const chatHistory = document.getElementById('chatHistory');
+        if (chatHistory) {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+    }
+</script>
+{% endblock %}

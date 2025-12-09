@@ -1,0 +1,65 @@
+<!-- templates/index.html -->
+{% extends 'base.html' %}
+{% block sidebar %}
+<div class="sidebar">
+    <div class="sidebar-header">
+        <h3><i class="fas fa-book"></i> Notebooks</h3>
+    </div>
+    <div class="notebooks-list">
+        <h5>Your Notebooks</h5>
+        {% if notebooks %}
+        {% for nb in notebooks %}
+        <div class="notebook-card">
+            <a href="{{ url_for('notebook', nb_id=nb['id']) }}">
+                {{ nb['subject'] }}
+            </a>
+            <div class="notebook-meta">
+                <small class="text-muted">Created recently</small>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-book-open"></i>
+            <h4>No notebooks yet</h4>
+            <p>Create your first notebook to get started</p>
+        </div>
+        {% endif %}
+    </div>
+    <div class="create-notebook-form">
+        <form method="POST" action="{{ url_for('create_notebook') }}">
+            <input type="text" name="subject" placeholder="Enter notebook name" class="form-control" required>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i> Create Notebook
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block main %}
+<div class="main">
+    <div class="header">
+        <h4>Welcome to Notebook LM</h4>
+        <div class="header-actions">
+            <button class="btn btn-outline-primary">
+                <i class="fas fa-question-circle"></i> Help
+            </button>
+        </div>
+    </div>
+    <div class="content">
+        <div class="chat-container">
+            <div class="welcome-screen">
+                <i class="fas fa-robot"></i>
+                <h3>Welcome to Notebook LM</h3>
+                <p>Select a notebook from the sidebar to start chatting with your documents, or create a new notebook to
+                    begin.</p>
+                <div class="mt-4">
+                    <div class="badge badge-primary me-2">PDF Support</div>
+                    <div class="badge badge-secondary me-2">AI-Powered</div>
+                    <div class="badge badge-secondary">Markdown Responses</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
