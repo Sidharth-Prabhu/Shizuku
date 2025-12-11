@@ -1,20 +1,25 @@
-<!-- templates/index.html -->
 {% extends 'base.html' %}
+
+{% block title %}Notebooks - Notebook LM Clone{% endblock %}
+
 {% block sidebar %}
 <div class="sidebar">
     <div class="sidebar-header">
-        <h3><i class="fas fa-book"></i> Notebooks</h3>
+        <i class="fas fa-book" style="font-size: 24px; color: var(--primary);"></i>
+        <h1>Notebook LM</h1>
     </div>
+
     <div class="notebooks-list">
-        <h5>Your Notebooks</h5>
         {% if notebooks %}
         {% for nb in notebooks %}
-        <div class="notebook-card">
-            <a href="{{ url_for('notebook', nb_id=nb['id']) }}">
-                {{ nb['subject'] }}
-            </a>
-            <div class="notebook-meta">
-                <small class="text-muted">Created recently</small>
+        <div class="notebook-item {% if nb['id'] == request.view_args.get('nb_id') %}active{% endif %}"
+            oncontextmenu="showContextMenu(event, {{ nb['id'] }}, '{{ nb['subject']|replace("'", "\\'") }}')"
+            onclick="location.href='{{ url_for('notebook', nb_id=nb['id']) }}'">
+            <div class="title">{{ nb['subject'] }}</div>
+            <div class="meta">
+                <span class="badge">{{ nb['material_count'] }} source{{ 's' if nb['material_count'] != 1 else ''
+                    }}</span>
+                <span>{{ nb['created_at'][:10] if nb['created_at'] else '' }}</span>
             </div>
         </div>
         {% endfor %}
@@ -22,43 +27,53 @@
         <div class="empty-state">
             <i class="fas fa-book-open"></i>
             <h4>No notebooks yet</h4>
-            <p>Create your first notebook to get started</p>
+            <p class="text-muted">Create your first notebook to get started</p>
         </div>
         {% endif %}
     </div>
-    <div class="create-notebook-form">
+
+    <div class="sidebar-footer">
         <form method="POST" action="{{ url_for('create_notebook') }}">
-            <input type="text" name="subject" placeholder="Enter notebook name" class="form-control" required>
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i> Create Notebook
-            </button>
+            <div class="input-group">
+                <input type="text" name="subject" class="form-control" placeholder="New notebook name" required
+                    style="border-radius: var(--radius-sm) 0 0 var(--radius-sm);">
+                <button class="btn btn-primary" type="submit"
+                    style="border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
         </form>
     </div>
 </div>
 {% endblock %}
-{% block main %}
-<div class="main">
-    <div class="header">
-        <h4>Welcome to Notebook LM</h4>
-        <div class="header-actions">
-            <button class="btn btn-outline-primary">
-                <i class="fas fa-question-circle"></i> Help
-            </button>
-        </div>
+
+{% block navbar %}
+<div class="navbar">
+    <div class="navbar-title">
+        <i class="fas fa-home me-2"></i>
+        All Notebooks
     </div>
-    <div class="content">
-        <div class="chat-container">
-            <div class="welcome-screen">
-                <i class="fas fa-robot"></i>
-                <h3>Welcome to Notebook LM</h3>
-                <p>Select a notebook from the sidebar to start chatting with your documents, or create a new notebook to
-                    begin.</p>
-                <div class="mt-4">
-                    <div class="badge badge-primary me-2">PDF Support</div>
-                    <div class="badge badge-secondary me-2">AI-Powered</div>
-                    <div class="badge badge-secondary">Markdown Responses</div>
-                </div>
-            </div>
+    <div class="navbar-actions">
+        <button class="btn btn-outline-primary" onclick="location.href='/'">
+            <i class="fas fa-sync-alt me-2"></i>
+            Refresh
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block chat_area %}
+<div class="chat-area">
+    <div class="chat-history">
+        <div class="empty-state">
+            <i class="fas fa-comments"></i>
+            <h4>Welcome to Notebook LM</h4>
+            <p class="text-muted">Select a notebook from the sidebar or create a new one to start chatting with your
+                documents</p>
+            <button class="btn btn-primary mt-3" onclick="document.querySelector('input[name=\" subject\"]').focus()">
+                <i class="fas fa-plus me-2"></i>
+                Create Your First Notebook
+            </button>
         </div>
     </div>
 </div>
