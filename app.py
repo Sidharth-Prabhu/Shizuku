@@ -15,7 +15,7 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Replace with your real Gemini API key
-genai.configure(api_key='AIzaSyBk9D_AUIUyGTKmbptSVRj2PcEOSjY8-Lc')
+genai.configure(api_key='AIzaSyDZ_m8zvsrhCYXbZxTfGIsnv4XMy2wmEPo')
 
 DB_NAME = 'notebook_lm.db'
 
@@ -228,18 +228,81 @@ def delete_material(mat_id):
     return '', 204
 
 
+@app.route('/delete_note/<int:note_id>', methods=['DELETE'])
+def delete_note(note_id):
+    with sqlite3.connect(DB_NAME) as conn:
+        c = conn.cursor()
+        c.execute('DELETE FROM notes WHERE id = ?', (note_id,))
+        conn.commit()
+        return '', 204
+
+
+@app.route('/rename_material/<int:mat_id>', methods=['POST'])
+def rename_material(mat_id):
+    data = request.json or {}
+    new_filename = data.get('filename', '').strip()
+
+    if not new_filename:
+        return jsonify({'error': 'Filename cannot be empty'}), 400
+
+    with sqlite3.connect(DB_NAME) as conn:
+        c = conn.cursor()
+        c.execute('UPDATE materials SET file_name = ? WHERE id = ?',
+                  (new_filename, mat_id))
+        conn.commit()
+        return '', 204
+
+# ----- Replace the existing save_note function with this -----
 @app.route('/save_note/<int:nb_id>', methods=['POST'])
 def save_note(nb_id):
-    data = request.json
-    title = data.get('title')
-    content = data.get('content')
+    data = request.json or {}
+    title = data.get('title') or 'Untitled Note'
+    content = data.get('content') or ''
     with sqlite3.connect(DB_NAME) as conn:
         c = conn.cursor()
         c.execute(
             'INSERT INTO notes (notebook_id, title, content, created_at) VALUES (?, ?, ?, datetime("now"))',
             (nb_id, title, content))
         conn.commit()
-    return '', 204
+        note_id = c.lastrowid
+
+        # read back the created_at timestamp so we can return it to the client
+        c.execute('SELECT created_at FROM notes WHERE id = ?', (note_id,))
+        row = c.fetchone()
+        created_at = row[0] if row else None
+
+    return jsonify({
+        'id': note_id,
+        'title': title,
+        'content': content,
+        'created_at': created_at
+    }), 200
+
+# ----- Add this new endpoint for listing notes (JSON) -----
+
+
+@app.route('/notes_list/<int:nb_id>', methods=['GET'])
+def notes_list(nb_id):
+    """
+    Return JSON list of notes for a notebook, ordered by created_at desc.
+    The frontend calls this to keep the Studio (notes panel) in sync.
+    """
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute(
+            'SELECT id, title, created_at FROM notes WHERE notebook_id = ? ORDER BY created_at DESC',
+            (nb_id,))
+        rows = c.fetchall()
+        notes = []
+        for r in rows:
+            notes.append({
+                'id': r['id'],
+                'title': r['title'],
+                'created_at': r['created_at'],
+            })
+    return jsonify(notes), 200
+
 
 
 @app.route('/update_note/<int:note_id>', methods=['POST'])
