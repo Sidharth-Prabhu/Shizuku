@@ -3,9 +3,9 @@
 {% block title %}Notebooks - Shizuku Clone{% endblock %}
 
 {% block sidebar %}
-<div class="sidebar">
+<div class="sidebar resizable">
     <div class="sidebar-header">
-        <i class="fas fa-book" style="font-size: 24px; color: var(--primary);"></i>
+        <i class="fas fa-book" style="font-size: 24px; color: #3b82f6;"></i>
         <h1>Shizuku</h1>
     </div>
 
@@ -27,24 +27,43 @@
         <div class="empty-state">
             <i class="fas fa-book-open"></i>
             <h4>No notebooks yet</h4>
-            <p class="text-muted">Create your first notebook to get started</p>
+            <p>Create your first notebook to get started</p>
         </div>
         {% endif %}
     </div>
 
     <div class="sidebar-footer">
-        <form method="POST" action="{{ url_for('create_notebook') }}">
+        <form method="POST" action="{{ url_for('create_notebook') }}" id="createNotebookForm">
             <div class="input-group">
                 <input type="text" name="subject" class="form-control" placeholder="New notebook name" required
-                    style="border-radius: var(--radius-sm) 0 0 var(--radius-sm);">
+                    style="border-radius: 8px 0 0 8px; background-color: #2a2a2a; border-color: #444; color: #e0e0e0;">
                 <button class="btn btn-primary" type="submit"
-                    style="border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+                    style="border-radius: 0 8px 8px 0; background-color: #3b82f6; border-color: #3b82f6;">
                     <i class="fas fa-plus"></i>
                 </button>
             </div>
         </form>
     </div>
 </div>
+
+<style>
+    .sidebar .form-control::placeholder {
+        color: #888;
+    }
+</style>
+
+<script>
+    document.getElementById('createNotebookForm')?.addEventListener('submit', function (e) {
+        const input = this.querySelector('input[name="subject"]');
+        if (!input.value.trim()) {
+            e.preventDefault();
+            input.focus();
+            input.style.borderColor = '#ef4444';
+            setTimeout(() => input.style.borderColor = '', 2000);
+            return false;
+        }
+    });
+</script>
 {% endblock %}
 
 {% block navbar %}
@@ -54,12 +73,29 @@
         All Notebooks
     </div>
     <div class="navbar-actions">
-        <button class="btn btn-outline-primary" onclick="location.href='/'">
+        <button class="btn btn-outline-primary" onclick="refreshPage()">
             <i class="fas fa-sync-alt me-2"></i>
             Refresh
         </button>
     </div>
 </div>
+
+<script>
+    function refreshPage() {
+        const refreshBtn = event?.target.closest('.btn-outline-primary');
+        if (refreshBtn) {
+            const originalHTML = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Refreshing';
+            refreshBtn.disabled = true;
+
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        } else {
+            location.reload();
+        }
+    }
+</script>
 {% endblock %}
 
 {% block chat_area %}
@@ -68,13 +104,32 @@
         <div class="empty-state">
             <i class="fas fa-comments"></i>
             <h4>Welcome to Shizuku</h4>
-            <p class="text-muted">Select a notebook from the sidebar or create a new one to start chatting with your
-                documents</p>
-            <button class="btn btn-primary mt-3" onclick="document.querySelector('input[name=\" subject\"]').focus()">
+            <p>Select a notebook from the sidebar or create a new one to start chatting with your documents</p>
+            <button class="btn btn-primary mt-3" onclick="focusNotebookInput()"
+                style="background-color: #3b82f6; border-color: #3b82f6;">
                 <i class="fas fa-plus me-2"></i>
                 Create Your First Notebook
             </button>
         </div>
     </div>
 </div>
+
+<script>
+    function focusNotebookInput() {
+        const notebookInput = document.querySelector('input[name="subject"]');
+        if (notebookInput) {
+            notebookInput.focus();
+            notebookInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+</script>
+{% endblock %}
+
+{% block studio_panel %}
+<style>
+    /* Hide studio panel on index page */
+    .studio-panel {
+        display: none;
+    }
+</style>
 {% endblock %}

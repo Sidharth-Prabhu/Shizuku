@@ -37,8 +37,8 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--bg-light);
-            color: #202124;
+            background: #141414;
+            color: #e0e0e0;
             height: 100vh;
             overflow: hidden;
             font-weight: 400;
@@ -51,20 +51,51 @@
             height: 100vh;
         }
 
+        /* Resizable columns */
+        .resizable {
+            position: relative;
+        }
+
+        .resizable-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            cursor: col-resize;
+            z-index: 100;
+            background: transparent;
+        }
+
+        .resizable-handle:hover,
+        .resizable-handle.resizing {
+            background: #3b82f6;
+        }
+
+        .resizable-handle-left {
+            left: -2px;
+        }
+
+        .resizable-handle-right {
+            right: -2px;
+        }
+
         /* Sidebar Styles */
         .sidebar {
             width: 280px;
-            background: var(--bg-white);
-            border-right: 1px solid var(--border);
+            min-width: 200px;
+            max-width: 400px;
+            background: #1a1a1a;
+            border-right: 1px solid #333;
             display: flex;
             flex-direction: column;
             height: 100%;
             box-shadow: var(--shadow-sm);
+            position: relative;
         }
 
         .sidebar-header {
             padding: 20px 16px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid #333;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -73,7 +104,7 @@
         .sidebar-header h1 {
             font-size: 20px;
             font-weight: 600;
-            color: var(--primary);
+            color: #3b82f6;
             margin: 0;
         }
 
@@ -91,36 +122,43 @@
             transition: all 0.2s ease;
             border: 1px solid transparent;
             position: relative;
+            background: #1a1a1a;
+            color: #b0b0b0;
         }
 
         .notebook-item:hover {
-            background: var(--primary-light);
-            border-color: var(--primary);
+            background: #2a2a2a;
+            border-color: #444;
         }
 
         .notebook-item.active {
-            background: var(--primary-light);
-            border: 1px solid var(--primary);
+            background: #2d2d2d;
+            border: 1px solid #3b82f6;
+            color: #e0e0e0;
         }
 
         .notebook-item .title {
             font-weight: 500;
-            color: #202124;
+            color: #d0d0d0;
             margin-bottom: 4px;
             font-size: 14px;
         }
 
+        .notebook-item.active .title {
+            color: #ffffff;
+        }
+
         .notebook-item .meta {
             font-size: 12px;
-            color: var(--secondary);
+            color: #888;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
         .notebook-item .badge {
-            background: var(--primary);
-            color: white;
+            background: #333;
+            color: #aaa;
             padding: 2px 8px;
             border-radius: 10px;
             font-size: 11px;
@@ -129,7 +167,7 @@
 
         .sidebar-footer {
             padding: 16px;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid #333;
         }
 
         /* Main Content */
@@ -142,8 +180,8 @@
 
         .navbar {
             height: 64px;
-            background: var(--bg-white);
-            border-bottom: 1px solid var(--border);
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -154,7 +192,7 @@
         .navbar-title {
             font-size: 18px;
             font-weight: 600;
-            color: #202124;
+            color: #e0e0e0;
         }
 
         .navbar-actions {
@@ -172,112 +210,143 @@
         /* Sources Panel */
         .sources-panel {
             width: 320px;
-            background: var(--bg-white);
-            border-right: 1px solid var(--border);
+            min-width: 200px;
+            max-width: 500px;
+            background: #1a1a1a;
+            border-right: 1px solid #333;
             display: flex;
             flex-direction: column;
             height: 100%;
+            position: relative;
+        }
+
+        /* Chat History Panel */
+        .chat-history-panel {
+            width: 300px;
+            min-width: 200px;
+            max-width: 400px;
+            background: #141414;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
         }
 
         /* Studio Panel */
         .studio-panel {
             width: 320px;
-            background: var(--bg-white);
-            border-left: 1px solid var(--border);
+            min-width: 200px;
+            max-width: 500px;
+            background: #1a1a1a;
+            border-left: 1px solid #333;
             display: flex;
             flex-direction: column;
             height: 100%;
+            position: relative;
         }
 
         .sources-header,
-        .studio-header {
+        .studio-header,
+        .chat-history-header {
             padding: 20px 16px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid #333;
+            background: #1a1a1a;
         }
 
         .sources-header h3,
-        .studio-header h3 {
+        .studio-header h3,
+        .chat-history-header h3 {
             font-size: 16px;
             font-weight: 600;
             margin: 0;
-            color: #202124;
+            color: #e0e0e0;
         }
 
         .sources-content,
-        .studio-content {
+        .studio-content,
+        .chat-history-content {
             flex: 1;
             overflow-y: auto;
             padding: 16px;
         }
 
         .upload-area {
-            border: 2px dashed var(--border);
+            border: 2px dashed #444;
             border-radius: var(--radius);
             padding: 24px;
             text-align: center;
             margin-bottom: 24px;
             cursor: pointer;
             transition: all 0.3s ease;
+            background: #1a1a1a;
         }
 
         .upload-area:hover {
-            border-color: var(--primary);
-            background: var(--primary-light);
+            border-color: #3b82f6;
+            background: #2a2a2a;
         }
 
         .upload-area i {
             font-size: 32px;
-            color: var(--primary);
+            color: #666;
             margin-bottom: 12px;
         }
 
         .source-item,
-        .note-item {
+        .note-item,
+        .chat-history-item {
             padding: 12px;
-            border: 1px solid var(--border);
+            border: 1px solid #333;
             border-radius: var(--radius-sm);
             margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 12px;
             transition: all 0.2s ease;
-            background: var(--bg-white);
+            background: #1a1a1a;
+            cursor: pointer;
         }
 
         .source-item:hover,
-        .note-item:hover {
-            border-color: var(--primary);
-            box-shadow: var(--shadow-sm);
+        .note-item:hover,
+        .chat-history-item:hover {
+            border-color: #3b82f6;
+            background: #2a2a2a;
         }
 
-        .source-item.selected {
-            border-color: var(--primary);
-            background: var(--primary-light);
+        .source-item.selected,
+        .chat-history-item.active {
+            border-color: #3b82f6;
+            background: #2d2d2d;
         }
 
         .source-item .icon,
         .note-item .icon {
-            color: var(--danger);
+            color: #ef4444;
             font-size: 16px;
         }
 
         .source-item .info,
-        .note-item .info {
+        .note-item .info,
+        .chat-history-item .info {
             flex: 1;
         }
 
         .source-item .filename,
-        .note-item .title {
+        .note-item .title,
+        .chat-history-item .title {
             font-weight: 500;
-            color: #202124;
+            color: #e0e0e0;
             font-size: 13px;
             margin-bottom: 2px;
         }
 
         .source-item .path,
-        .note-item .meta {
+        .note-item .meta,
+        .chat-history-item .meta {
             font-size: 11px;
-            color: var(--secondary);
+            color: #888;
         }
 
         .source-item .checkbox {
@@ -291,7 +360,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: var(--bg-light);
+            background: #141414;
             position: relative;
         }
 
@@ -309,7 +378,7 @@
 
         .user-message {
             margin-left: auto;
-            background: var(--primary);
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
             color: white;
             padding: 16px 20px;
             border-radius: 20px 20px 4px 20px;
@@ -318,8 +387,8 @@
         }
 
         .ai-message {
-            background: var(--bg-white);
-            border: 1px solid var(--border);
+            background: #1a1a1a;
+            border: 1px solid #333;
             padding: 24px;
             border-radius: 20px 20px 20px 4px;
             box-shadow: var(--shadow-sm);
@@ -349,7 +418,7 @@
         }
 
         .ai-message .icon {
-            background: var(--primary);
+            background: #3b82f6;
             color: white;
         }
 
@@ -359,7 +428,7 @@
         }
 
         .ai-message .name {
-            color: #202124;
+            color: #e0e0e0;
         }
 
         .message-content {
@@ -370,36 +439,38 @@
         /* Quill Editor Styles */
         #editor {
             height: 300px;
-            background: white;
-            border: 1px solid var(--border);
+            background: #1a1a1a;
+            border: 1px solid #333;
             border-radius: var(--radius-sm);
         }
 
         .ql-toolbar.ql-snow {
-            border: 1px solid var(--border);
+            border: 1px solid #333;
             border-bottom: none;
             border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+            background: #2a2a2a;
         }
 
         .ql-container.ql-snow {
-            border: 1px solid var(--border);
+            border: 1px solid #333;
             border-top: none;
             border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+            background: #1a1a1a;
         }
 
         /* Chat Input */
         .chat-input-container {
             padding: 16px 24px;
-            background: var(--bg-white);
-            border-top: 1px solid var(--border);
+            background: #1a1a1a;
+            border-top: 1px solid #333;
             box-shadow: var(--shadow-sm);
         }
 
         .chat-input-wrapper {
             display: flex;
             align-items: center;
-            background: var(--bg-light);
-            border: 1px solid var(--border);
+            background: #2a2a2a;
+            border: 1px solid #444;
             border-radius: 24px;
             padding: 8px 16px;
         }
@@ -410,15 +481,15 @@
             background: transparent;
             outline: none;
             font-size: 14px;
-            color: #202124;
+            color: #e0e0e0;
         }
 
         .chat-input-wrapper input::placeholder {
-            color: var(--secondary);
+            color: #888;
         }
 
         .chat-input-wrapper button {
-            background: var(--primary);
+            background: #3b82f6;
             color: white;
             border: none;
             width: 32px;
@@ -432,20 +503,20 @@
         }
 
         .chat-input-wrapper button:hover {
-            background: #0d62d9;
+            background: #2563eb;
             transform: scale(1.05);
         }
 
         .chat-input-wrapper button:disabled {
-            background: var(--secondary);
+            background: #666;
             cursor: not-allowed;
         }
 
         /* Context Menu */
         .context-menu {
             position: fixed;
-            background: white;
-            border: 1px solid var(--border);
+            background: #2a2a2a;
+            border: 1px solid #444;
             border-radius: var(--radius);
             box-shadow: var(--shadow-lg);
             z-index: 1000;
@@ -460,27 +531,27 @@
             align-items: center;
             gap: 10px;
             font-size: 14px;
-            color: #202124;
+            color: #e0e0e0;
             transition: background 0.2s ease;
         }
 
         .context-menu-item:hover {
-            background: var(--primary-light);
+            background: #3a3a3a;
         }
 
         .context-menu-item.danger {
-            color: var(--danger);
+            color: #ef4444;
         }
 
         .context-menu-item.danger:hover {
-            background: #ffebee;
+            background: #442222;
         }
 
         /* Empty States */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: var(--secondary);
+            color: #888;
         }
 
         .empty-state i {
@@ -492,7 +563,7 @@
         .empty-state h4 {
             font-weight: 500;
             margin-bottom: 8px;
-            color: #5f6368;
+            color: #e0e0e0;
         }
 
         /* Loading Animation */
@@ -510,7 +581,7 @@
         .loading-dots span {
             width: 6px;
             height: 6px;
-            background: var(--primary);
+            background: #3b82f6;
             border-radius: 50%;
             animation: bounce 1.4s infinite ease-in-out both;
         }
@@ -543,22 +614,25 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: #1a1a1a;
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
+            background: #444;
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
+            background: #555;
         }
 
         /* Responsive */
         @media (max-width: 1024px) {
-            .sources-panel {
+
+            .sources-panel,
+            .studio-panel,
+            .chat-history-panel {
                 width: 280px;
             }
         }
@@ -568,7 +642,8 @@
                 width: 240px;
             }
 
-            .sources-panel {
+            .sources-panel,
+            .chat-history-panel {
                 position: absolute;
                 left: 0;
                 top: 0;
@@ -578,9 +653,44 @@
                 transition: transform 0.3s ease;
             }
 
-            .sources-panel.active {
+            .sources-panel.active,
+            .chat-history-panel.active {
                 transform: translateX(0);
             }
+        }
+
+        /* Chat History Item Preview */
+        .chat-history-item .preview {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* New Chat Button */
+        .new-chat-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .new-chat-btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .new-chat-btn i {
+            font-size: 12px;
         }
     </style>
 </head>
@@ -591,12 +701,12 @@
     <div class="flash-messages">
         {% for category, msg in messages %}
         <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} position-fixed"
-            style="top:20px; right:20px; z-index:9999; box-shadow: var(--shadow-lg); border-radius: var(--radius);">
+            style="top:20px; right:20px; z-index:9999; box-shadow: var(--shadow-lg); border-radius: var(--radius); background: {{ '#ef4444' if category == 'error' else '#10b981' }}; color: white; border: none;">
             <div class="d-flex align-items-center gap-2">
                 <i class="fas fa-{{ 'exclamation-circle' if category == 'error' else 'check-circle' }}"></i>
                 {{ msg }}
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}
     </div>
@@ -609,6 +719,7 @@
             {% block navbar %}{% endblock %}
             <div class="content-area">
                 {% block sources_panel %}{% endblock %}
+                {% block chat_history_panel %}{% endblock %}
                 {% block chat_area %}{% endblock %}
                 {% block studio_panel %}{% endblock %}
             </div>
@@ -630,6 +741,128 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     <script>
+        // Resizable columns functionality
+        class ResizableColumn {
+            constructor(element, options = {}) {
+                this.element = element;
+                this.options = {
+                    minWidth: 200,
+                    maxWidth: 500,
+                    handleWidth: 4,
+                    ...options
+                };
+
+                this.isResizing = false;
+                this.startX = 0;
+                this.startWidth = 0;
+                this.currentWidth = 0;
+
+                this.init();
+            }
+
+            init() {
+                const handle = document.createElement('div');
+                handle.className = 'resizable-handle';
+
+                if (this.element.classList.contains('sidebar') ||
+                    this.element.classList.contains('sources-panel') ||
+                    this.element.classList.contains('chat-history-panel')) {
+                    handle.classList.add('resizable-handle-right');
+                    this.element.appendChild(handle);
+                } else if (this.element.classList.contains('studio-panel')) {
+                    handle.classList.add('resizable-handle-left');
+                    this.element.insertBefore(handle, this.element.firstChild);
+                }
+
+                handle.addEventListener('mousedown', this.startResize.bind(this));
+
+                // Load saved width from localStorage
+                const savedWidth = localStorage.getItem(`column-width-${this.element.className}`);
+                if (savedWidth) {
+                    this.element.style.width = savedWidth + 'px';
+                }
+            }
+
+            startResize(e) {
+                e.preventDefault();
+                this.isResizing = true;
+                this.startX = e.clientX;
+                this.startWidth = this.element.offsetWidth;
+                this.currentWidth = this.startWidth;
+
+                document.addEventListener('mousemove', this.doResize.bind(this));
+                document.addEventListener('mouseup', this.stopResize.bind(this));
+
+                this.element.classList.add('resizing');
+                e.target.classList.add('resizing');
+
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            }
+
+            doResize(e) {
+                if (!this.isResizing) return;
+
+                const delta = e.clientX - this.startX;
+                let newWidth = this.startWidth + delta;
+
+                // Apply min/max constraints
+                newWidth = Math.max(this.options.minWidth, newWidth);
+                newWidth = Math.min(this.options.maxWidth, newWidth);
+
+                // Update width
+                this.element.style.width = newWidth + 'px';
+                this.currentWidth = newWidth;
+
+                // Dispatch custom event
+                this.element.dispatchEvent(new CustomEvent('resize', { detail: { width: newWidth } }));
+            }
+
+            stopResize() {
+                if (!this.isResizing) return;
+
+                this.isResizing = false;
+
+                // Save width to localStorage
+                localStorage.setItem(`column-width-${this.element.className}`, this.currentWidth);
+
+                document.removeEventListener('mousemove', this.doResize.bind(this));
+                document.removeEventListener('mouseup', this.stopResize.bind(this));
+
+                this.element.classList.remove('resizing');
+                document.querySelectorAll('.resizable-handle').forEach(h => h.classList.remove('resizing'));
+
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        }
+
+        // Initialize resizable columns when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Make all panels resizable
+            const resizablePanels = [
+                '.sidebar',
+                '.sources-panel',
+                '.chat-history-panel',
+                '.studio-panel'
+            ];
+
+            resizablePanels.forEach(selector => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    new ResizableColumn(element);
+                }
+            });
+
+            // Initialize highlight.js for code blocks
+            if (typeof hljs !== 'undefined') {
+                document.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            }
+        });
+
+        // Global context menu functions
         let currentNotebookId = null;
         let currentNotebookName = null;
 
@@ -710,15 +943,6 @@
         document.addEventListener('contextmenu', (e) => {
             if (!e.target.closest('.notebook-item')) {
                 hideContextMenu();
-            }
-        });
-
-        // Initialize highlight.js for code blocks
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof hljs !== 'undefined') {
-                document.querySelectorAll('pre code').forEach((block) => {
-                    hljs.highlightElement(block);
-                });
             }
         });
 

@@ -1,4 +1,4 @@
-# app.py
+# app.py - Updated with chat history features
 import os
 import sqlite3
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
@@ -15,7 +15,7 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Replace with your real Gemini API key
-genai.configure(api_key='AIzaSyDZ_m8zvsrhCYXbZxTfGIsnv4XMy2wmEPo')
+genai.configure(api_key='GEMINI_API_KEY_HERE')
 
 DB_NAME = 'notebook_lm.db'
 
@@ -43,6 +43,7 @@ def init_db():
         c.execute('''CREATE TABLE IF NOT EXISTS chats (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             notebook_id INTEGER,
+            session_id TEXT,
             message TEXT,
             is_user BOOLEAN,
             created_at TIMESTAMP,
@@ -57,6 +58,29 @@ def init_db():
             created_at TIMESTAMP,
             FOREIGN KEY (notebook_id) REFERENCES notebooks (id) ON DELETE CASCADE
         )''')
+
+        c.execute('''CREATE TABLE IF NOT EXISTS chat_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            notebook_id INTEGER,
+            session_id TEXT UNIQUE,
+            title TEXT,
+            created_at TIMESTAMP,
+            last_activity TIMESTAMP,
+            FOREIGN KEY (notebook_id) REFERENCES notebooks (id) ON DELETE CASCADE
+        )''')
+
+        # Check if session_id column exists in chats table
+        c.execute("PRAGMA table_info(chats)")
+        columns = [column[1] for column in c.fetchall()]
+        if 'session_id' not in columns:
+            print("Adding session_id column to chats table...")
+            try:
+                c.execute("ALTER TABLE chats ADD COLUMN session_id TEXT")
+                # Set default session_id for existing chats
+                c.execute(
+                    "UPDATE chats SET session_id = 'default' WHERE session_id IS NULL")
+            except:
+                pass
 
         # Check if file_name column exists, if not add it (without default)
         c.execute("PRAGMA table_info(materials)")
@@ -150,6 +174,58 @@ def parse_selected_sources(selected_sources_str):
             return [int(selected_sources_str)]
 
     return []
+
+
+def get_or_create_session(notebook_id, session_id=None):
+    """Get existing session or create a new one"""
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+
+        if session_id:
+            # Check if session exists
+            c.execute('SELECT * FROM chat_sessions WHERE session_id = ? AND notebook_id = ?',
+                      (session_id, notebook_id))
+            session = c.fetchone()
+            if session:
+                # Update last activity
+                c.execute('UPDATE chat_sessions SET last_activity = datetime("now") WHERE id = ?',
+                          (session['id'],))
+                conn.commit()
+                return session_id
+
+        # Create new session
+        new_session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        c.execute('''INSERT INTO chat_sessions 
+                    (notebook_id, session_id, title, created_at, last_activity) 
+                    VALUES (?, ?, ?, datetime("now"), datetime("now"))''',
+                  (notebook_id, new_session_id, "New Chat"))
+        conn.commit()
+        return new_session_id
+
+
+def get_chat_sessions(notebook_id):
+    """Get all chat sessions for a notebook"""
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute('''SELECT session_id, title, created_at, last_activity 
+                    FROM chat_sessions 
+                    WHERE notebook_id = ? 
+                    ORDER BY last_activity DESC''', (notebook_id,))
+        return c.fetchall()
+
+
+def get_chat_messages(notebook_id, session_id):
+    """Get chat messages for a specific session"""
+    with sqlite3.connect(DB_NAME) as conn:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute('''SELECT message, is_user, created_at 
+                    FROM chats 
+                    WHERE notebook_id = ? AND session_id = ? 
+                    ORDER BY created_at''', (notebook_id, session_id))
+        return c.fetchall()
 
 
 @app.route('/')
@@ -252,7 +328,7 @@ def rename_material(mat_id):
         conn.commit()
         return '', 204
 
-# ----- Replace the existing save_note function with this -----
+
 @app.route('/save_note/<int:nb_id>', methods=['POST'])
 def save_note(nb_id):
     data = request.json or {}
@@ -278,14 +354,11 @@ def save_note(nb_id):
         'created_at': created_at
     }), 200
 
-# ----- Add this new endpoint for listing notes (JSON) -----
-
 
 @app.route('/notes_list/<int:nb_id>', methods=['GET'])
 def notes_list(nb_id):
     """
     Return JSON list of notes for a notebook, ordered by created_at desc.
-    The frontend calls this to keep the Studio (notes panel) in sync.
     """
     with sqlite3.connect(DB_NAME) as conn:
         conn.row_factory = sqlite3.Row
@@ -302,7 +375,6 @@ def notes_list(nb_id):
                 'created_at': r['created_at'],
             })
     return jsonify(notes), 200
-
 
 
 @app.route('/update_note/<int:note_id>', methods=['POST'])
@@ -331,8 +403,65 @@ def get_note(note_id):
             return jsonify({'error': 'Note not found'}), 404
 
 
+@app.route('/new_chat_session/<int:nb_id>', methods=['POST'])
+def new_chat_session(nb_id):
+    """Create a new chat session"""
+    session_id = get_or_create_session(nb_id)
+    return jsonify({'session_id': session_id}), 200
+
+
+@app.route('/get_chat_sessions/<int:nb_id>', methods=['GET'])
+def get_chat_sessions_route(nb_id):
+    """Get all chat sessions for a notebook"""
+    sessions = get_chat_sessions(nb_id)
+    sessions_list = []
+    for session in sessions:
+        sessions_list.append({
+            'session_id': session['session_id'],
+            'title': session['title'],
+            'created_at': session['created_at'],
+            'last_activity': session['last_activity']
+        })
+    return jsonify(sessions_list), 200
+
+
+@app.route('/delete_chat_session/<int:nb_id>/<session_id>', methods=['DELETE'])
+def delete_chat_session(nb_id, session_id):
+    """Delete a chat session and its messages"""
+    with sqlite3.connect(DB_NAME) as conn:
+        c = conn.cursor()
+        # Delete chat messages first
+        c.execute(
+            'DELETE FROM chats WHERE notebook_id = ? AND session_id = ?', (nb_id, session_id))
+        # Delete the session
+        c.execute(
+            'DELETE FROM chat_sessions WHERE notebook_id = ? AND session_id = ?', (nb_id, session_id))
+        conn.commit()
+    return '', 204
+
+
+@app.route('/rename_chat_session/<int:nb_id>/<session_id>', methods=['POST'])
+def rename_chat_session(nb_id, session_id):
+    """Rename a chat session"""
+    data = request.json or {}
+    new_title = data.get('title', '').strip()
+
+    if not new_title:
+        return jsonify({'error': 'Title cannot be empty'}), 400
+
+    with sqlite3.connect(DB_NAME) as conn:
+        c = conn.cursor()
+        c.execute('UPDATE chat_sessions SET title = ? WHERE notebook_id = ? AND session_id = ?',
+                  (new_title, nb_id, session_id))
+        conn.commit()
+    return '', 204
+
+
 @app.route('/notebook/<int:nb_id>', methods=['GET', 'POST'])
 def notebook(nb_id):
+    session_id = request.args.get(
+        'session_id') or request.form.get('session_id')
+
     with sqlite3.connect(DB_NAME) as conn:
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
@@ -343,7 +472,10 @@ def notebook(nb_id):
             flash('Notebook not found', 'error')
             return redirect(url_for('index'))
 
-        # Get materials with proper handling for missing columns
+        # Get or create session
+        current_session_id = get_or_create_session(nb_id, session_id)
+
+        # Get materials
         try:
             c.execute(
                 'SELECT id, pdf_path, file_name FROM materials WHERE notebook_id = ? ORDER BY uploaded_at DESC', (nb_id,))
@@ -369,8 +501,12 @@ def notebook(nb_id):
                 materials.append(
                     {'id': mat_id, 'pdf_path': pdf_path, 'file_name': file_name})
 
-        c.execute(
-            'SELECT message, is_user, created_at FROM chats WHERE notebook_id = ? ORDER BY created_at', (nb_id,))
+        # Get chat messages for current session
+        c.execute('''SELECT message, is_user, created_at 
+                    FROM chats 
+                    WHERE notebook_id = ? AND session_id = ? 
+                    ORDER BY created_at''', (nb_id, current_session_id))
+
         chat_history = []
         for row in c.fetchall():
             if row['is_user']:
@@ -378,6 +514,9 @@ def notebook(nb_id):
             else:
                 formatted_message = format_ai_response(row['message'])
                 chat_history.append((formatted_message, False))
+
+        # Get chat sessions
+        chat_sessions = get_chat_sessions(nb_id)
 
         # Get notes
         c.execute(
@@ -406,13 +545,35 @@ def notebook(nb_id):
                             (nb_id, fn, file.filename))
                 conn.commit()
                 flash('PDFs uploaded!', 'success')
-                return redirect(url_for('notebook', nb_id=nb_id))
+                return redirect(url_for('notebook', nb_id=nb_id, session_id=current_session_id))
 
             elif 'message' in request.form:
                 user_msg = request.form['message'].strip()
                 if user_msg:
+                    # Save user message
                     c.execute(
-                        'INSERT INTO chats (notebook_id, message, is_user, created_at) VALUES (?, ?, 1, datetime("now"))', (nb_id, user_msg))
+                        'INSERT INTO chats (notebook_id, session_id, message, is_user, created_at) VALUES (?, ?, ?, 1, datetime("now"))',
+                        (nb_id, current_session_id, user_msg))
+
+                    # Update session title if it's the first user message in this session
+                    c.execute('''SELECT COUNT(*) FROM chats 
+                                WHERE notebook_id = ? AND session_id = ? AND is_user = 1''',
+                              (nb_id, current_session_id))
+                    user_message_count = c.fetchone()[0]
+
+                    if user_message_count == 1:
+                        # Use first user message as session title (truncated if too long)
+                        title = user_msg[:50] + \
+                            ('...' if len(user_msg) > 50 else '')
+                        c.execute('''UPDATE chat_sessions SET title = ?, last_activity = datetime("now") 
+                                    WHERE notebook_id = ? AND session_id = ?''',
+                                  (title, nb_id, current_session_id))
+                    else:
+                        # Just update last activity
+                        c.execute('''UPDATE chat_sessions SET last_activity = datetime("now") 
+                                    WHERE notebook_id = ? AND session_id = ?''',
+                                  (nb_id, current_session_id))
+
                     conn.commit()
 
                     context = ""
@@ -460,14 +621,19 @@ def notebook(nb_id):
                     except Exception as e:
                         ai_reply = f"Error generating response: {str(e)}"
 
+                    # Save AI response
                     c.execute(
-                        'INSERT INTO chats (notebook_id, message, is_user, created_at) VALUES (?, ?, 0, datetime("now"))', (nb_id, ai_reply))
+                        'INSERT INTO chats (notebook_id, session_id, message, is_user, created_at) VALUES (?, ?, ?, 0, datetime("now"))',
+                        (nb_id, current_session_id, ai_reply))
                     conn.commit()
 
-                    # Pass selected sources as query parameters
+                    # Pass selected sources and session_id as query parameters
                     selected_sources_str = ','.join(
                         str(x) for x in selected_ids)
-                    return redirect(url_for('notebook', nb_id=nb_id, selected_sources=selected_sources_str) + '#chatHistory')
+                    return redirect(url_for('notebook',
+                                            nb_id=nb_id,
+                                            session_id=current_session_id,
+                                            selected_sources=selected_sources_str) + '#chatHistory')
 
         # Sidebar
         c.execute('SELECT id, subject FROM notebooks ORDER BY id DESC')
@@ -486,6 +652,8 @@ def notebook(nb_id):
                            subject=nb['subject'],
                            materials=materials,
                            chat_history=chat_history,
+                           chat_sessions=chat_sessions,
+                           current_session_id=current_session_id,
                            notebooks=notebooks_with_counts,
                            selected_sources=selected_ids,
                            notes=notes)

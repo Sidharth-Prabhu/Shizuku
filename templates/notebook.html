@@ -3,16 +3,16 @@
 {% block title %}{{ subject }} - Shizuku Clone{% endblock %}
 
 {% block sidebar %}
-<div class="sidebar">
+<div class="sidebar resizable">
     <div class="sidebar-header">
-        <i class="fas fa-book" style="font-size: 24px; color: var(--primary);"></i>
+        <i class="fas fa-book" style="font-size: 24px; color: #3b82f6;"></i>
         <h1>Shizuku</h1>
     </div>
 
     <div class="notebooks-list">
         {% for nb in notebooks %}
         <div class="notebook-item {% if nb['id'] == nb_id %}active{% endif %}"
-            oncontextmenu="handleNotebookContextMenu(event, {{ nb['id'] }}, '{{ nb['subject']|e }}')"
+            oncontextmenu="showContextMenu(event, {{ nb['id'] }}, '{{ nb['subject']|e }}')"
             onclick="location.href='{{ url_for('notebook', nb_id=nb['id']) }}'">
             <div class="title">{{ nb['subject'] }}</div>
             <div class="meta">
@@ -26,19 +26,28 @@
     <div class="sidebar-footer">
         <form method="POST" action="{{ url_for('create_notebook') }}">
             <div class="input-group">
-                <input type="text" name="subject" class="form-control" placeholder="New notebook" required>
-                <button class="btn btn-primary" type="submit"><i class="fas fa-plus"></i></button>
+                <input type="text" name="subject" class="form-control" placeholder="New notebook" required
+                    style="background-color: #2a2a2a; border-color: #444; color: #e0e0e0;">
+                <button class="btn btn-primary" type="submit" style="background-color: #3b82f6; border-color: #3b82f6;">
+                    <i class="fas fa-plus"></i>
+                </button>
             </div>
         </form>
     </div>
 </div>
+
+<style>
+    .sidebar .form-control::placeholder {
+        color: #888;
+    }
+</style>
 {% endblock %}
 
 {% block navbar %}
 <div class="navbar">
     <div class="d-flex align-items-center">
         <div class="navbar-title"><i class="fas fa-book me-2"></i>{{ subject }}</div>
-        <small class="text-muted ms-3">{{ materials|length }} source{{ 's' if materials|length != 1 else '' }}</small>
+        <small class="ms-3">{{ materials|length }} source{{ 's' if materials|length != 1 else '' }}</small>
     </div>
     <div class="navbar-actions">
         <button class="btn btn-outline-primary" onclick="document.getElementById('pdfUpload').click()">
@@ -46,20 +55,32 @@
         </button>
     </div>
 </div>
+
+<style>
+    .btn-outline-primary {
+        color: #3b82f6;
+        border-color: #3b82f6;
+    }
+
+    .btn-outline-primary:hover {
+        background-color: #3b82f6;
+        color: white;
+    }
+</style>
 {% endblock %}
 
 {% block sources_panel %}
-<div class="sources-panel">
+<div class="sources-panel resizable">
     <div class="sources-header">
         <h3>Sources</h3>
-        <small class="text-muted">Select which sources to query from</small>
+        <small>Select which sources to query from</small>
     </div>
 
     <div class="sources-content">
         <div class="upload-area" onclick="document.getElementById('pdfUpload').click()">
             <i class="fas fa-cloud-upload-alt"></i>
             <h6>Upload PDFs</h6>
-            <p class="text-muted">Click or drag and drop files here</p>
+            <p>Click or drag and drop files here</p>
         </div>
 
         <form method="POST" enctype="multipart/form-data" id="uploadForm">
@@ -70,7 +91,7 @@
         {% if materials %}
         <div class="mb-3">
             <h6 class="mb-2">Query from selected sources:</h6>
-            <small class="text-muted">Uncheck to exclude from queries</small>
+            <small>Uncheck to exclude from queries</small>
         </div>
 
         {% for mat in materials %}
@@ -89,12 +110,12 @@
             <div class="source-actions">
                 <input type="checkbox" class="checkbox" name="selected_sources" value="{{ mat['id'] }}" {% if mat['id']
                     in selected_sources %}checked{% endif %} onclick="event.stopPropagation()">
-                <button class="btn btn-sm btn-link text-secondary rename-btn"
+                <button class="btn btn-sm btn-link rename-btn"
                     onclick="startRenameSource({{ mat['id'] }}, '{{ (mat['file_name'] or mat['pdf_path'])|e }}'); event.stopPropagation()"
                     title="Rename">
                     <i class="fas fa-pencil-alt"></i>
                 </button>
-                <button class="btn btn-sm btn-link text-danger delete-btn"
+                <button class="btn btn-sm btn-link delete-btn"
                     onclick="deleteMaterial({{ mat['id'] }}); event.stopPropagation()" title="Delete source">
                     <i class="fas fa-times"></i>
                 </button>
@@ -105,268 +126,11 @@
         <div class="empty-state">
             <i class="fas fa-folder-open"></i>
             <h4>No sources yet</h4>
-            <p class="text-muted">Upload PDFs to start asking questions</p>
+            <p>Upload PDFs to start asking questions</p>
         </div>
         {% endif %}
     </div>
 </div>
-
-<style>
-    /* Sources Panel Styles */
-    .sources-panel {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .sources-header {
-        padding: 16px 20px;
-        border-bottom: 1px solid #e5e7eb;
-        background-color: white;
-    }
-
-    .sources-header h3 {
-        font-size: 18px;
-        font-weight: 600;
-        margin: 0 0 4px 0;
-        color: #374151;
-    }
-
-    .sources-header .text-muted {
-        font-size: 12px;
-        color: #9ca3af;
-    }
-
-    .sources-content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 16px 20px;
-        background-color: #f9fafb;
-    }
-
-    .upload-area {
-        border: 2px dashed #d1d5db;
-        border-radius: 12px;
-        padding: 32px 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s;
-        background-color: white;
-        margin-bottom: 24px;
-    }
-
-    .upload-area:hover {
-        border-color: #3b82f6;
-        background-color: #f0f9ff;
-    }
-
-    .upload-area i {
-        font-size: 40px;
-        color: #9ca3af;
-        margin-bottom: 12px;
-    }
-
-    .upload-area h6 {
-        font-size: 16px;
-        font-weight: 600;
-        color: #374151;
-        margin-bottom: 4px;
-    }
-
-    .upload-area p {
-        font-size: 13px;
-        margin: 0;
-    }
-
-    /* Source Items */
-    .source-item {
-        display: flex;
-        align-items: center;
-        padding: 12px;
-        background-color: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-        position: relative;
-    }
-
-    .source-item:hover {
-        border-color: #3b82f6;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
-    }
-
-    .source-item.selected {
-        border-color: #3b82f6;
-        background-color: #eff6ff;
-    }
-
-    .source-item .icon {
-        flex-shrink: 0;
-        width: 36px;
-        height: 36px;
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 12px;
-    }
-
-    .source-item .icon i {
-        color: white;
-        font-size: 16px;
-    }
-
-    .source-item .info {
-        flex: 1;
-        min-width: 0;
-        margin-right: 12px;
-    }
-
-    .source-item .filename {
-        font-size: 14px;
-        font-weight: 500;
-        color: #374151;
-        margin-bottom: 2px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        padding: 2px 4px;
-        border-radius: 4px;
-        transition: background-color 0.2s;
-    }
-
-    .source-item .filename:hover {
-        background-color: #f3f4f6;
-    }
-
-    .source-item .filename.editing {
-        padding: 4px 8px;
-        background-color: white;
-        border: 1px solid #3b82f6;
-        border-radius: 4px;
-        white-space: normal;
-    }
-
-    .source-item .path {
-        font-size: 12px;
-        color: #9ca3af;
-    }
-
-    .source-actions {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex-shrink: 0;
-    }
-
-    .source-item .checkbox {
-        width: 18px;
-        height: 18px;
-        cursor: pointer;
-        accent-color: #3b82f6;
-        margin: 0;
-    }
-
-    .rename-btn,
-    .delete-btn {
-        width: 28px;
-        height: 28px;
-        padding: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        opacity: 0;
-        transition: all 0.2s;
-    }
-
-    .source-item:hover .rename-btn,
-    .source-item:hover .delete-btn {
-        opacity: 1;
-    }
-
-    .rename-btn:hover {
-        background-color: #f3f4f6;
-        color: #3b82f6 !important;
-    }
-
-    .delete-btn:hover {
-        background-color: #fef2f2;
-        color: #dc2626 !important;
-    }
-
-    .rename-btn i,
-    .delete-btn i {
-        font-size: 12px;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-    }
-
-    .empty-state i {
-        font-size: 48px;
-        color: #9ca3af;
-        margin-bottom: 16px;
-        opacity: 0.5;
-    }
-
-    .empty-state h4 {
-        font-size: 18px;
-        font-weight: 600;
-        color: #374151;
-        margin-bottom: 8px;
-    }
-
-    .empty-state p {
-        font-size: 14px;
-        color: #9ca3af;
-        margin: 0;
-    }
-
-    /* Scrollbar Styling */
-    .sources-content::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .sources-content::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .sources-content::-webkit-scrollbar-thumb {
-        background: #d1d5db;
-        border-radius: 3px;
-    }
-
-    .sources-content::-webkit-scrollbar-thumb:hover {
-        background: #9ca3af;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-        .sources-header {
-            padding: 12px 16px;
-        }
-
-        .sources-content {
-            padding: 12px 16px;
-        }
-
-        .source-item {
-            padding: 10px;
-        }
-
-        .rename-btn,
-        .delete-btn {
-            opacity: 1;
-        }
-    }
-</style>
 
 <script>
     // Start renaming a source
@@ -387,6 +151,9 @@
             border: 1px solid #3b82f6;
             border-radius: 4px;
             width: 100%;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            border-color: #3b82f6;
         `;
 
         // Replace text with input
@@ -421,7 +188,7 @@
     function saveRenameSource(matId, newName) {
         if (!newName.trim()) {
             showToast('Filename cannot be empty', 'error');
-            location.reload(); // Reload to restore original
+            location.reload();
             return;
         }
 
@@ -433,7 +200,7 @@
             .then(response => {
                 if (response.ok) {
                     showToast('Source renamed successfully', 'success');
-                    location.reload(); // Reload to update UI
+                    location.reload();
                 } else {
                     throw new Error('Failed to rename');
                 }
@@ -441,7 +208,7 @@
             .catch(err => {
                 console.error('Rename error:', err);
                 showToast('Failed to rename source', 'error');
-                location.reload(); // Reload to restore original
+                location.reload();
             });
     }
 
@@ -449,6 +216,214 @@
     function cancelRenameSource(filenameElement, originalContent) {
         filenameElement.innerHTML = originalContent;
         filenameElement.classList.remove('editing');
+    }
+</script>
+{% endblock %}
+
+{% block chat_history_panel %}
+<div class="chat-history-panel resizable">
+    <div class="chat-history-header">
+        <h3>Chat History</h3>
+        <button class="new-chat-btn" onclick="createNewChat()">
+            <i class="fas fa-plus"></i>
+            New Chat
+        </button>
+    </div>
+    <div class="chat-history-content" id="chatSessionsList">
+        {% if chat_sessions %}
+        {% for session in chat_sessions %}
+        <div class="chat-history-item {% if session['session_id'] == current_session_id %}active{% endif %}"
+            onclick="switchChatSession('{{ session['session_id'] }}')">
+            <div class="info">
+                <div class="title">{{ session['title'] or 'New Chat' }}</div>
+                <div class="meta">{{ session['last_activity'][:16] if session['last_activity'] else '' }}</div>
+                <div class="preview">Click to open this chat</div>
+            </div>
+            <div class="session-actions">
+                <button class="btn btn-sm btn-link rename-session-btn"
+                    onclick="renameChatSession('{{ session['session_id'] }}', '{{ session['title']|e }}'); event.stopPropagation()"
+                    title="Rename">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="btn btn-sm btn-link delete-session-btn"
+                    onclick="deleteChatSession('{{ session['session_id'] }}'); event.stopPropagation()" title="Delete">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-comments"></i>
+            <h4>No chats yet</h4>
+            <p>Start a new chat to begin</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .chat-history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .session-actions {
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .chat-history-item:hover .session-actions {
+        opacity: 1;
+    }
+
+    .rename-session-btn,
+    .delete-session-btn {
+        color: #aaa;
+        padding: 2px;
+        font-size: 12px;
+    }
+
+    .rename-session-btn:hover {
+        color: #3b82f6;
+    }
+
+    .delete-session-btn:hover {
+        color: #ef4444;
+    }
+</style>
+
+<script>
+    function createNewChat() {
+        fetch(`/new_chat_session/{{ nb_id }}`, {
+            method: 'POST'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.session_id) {
+                    window.location.href = `/notebook/{{ nb_id }}?session_id=${data.session_id}`;
+                }
+            })
+            .catch(error => {
+                console.error('Error creating new chat:', error);
+                showToast('Failed to create new chat', 'error');
+            });
+    }
+
+    function switchChatSession(sessionId) {
+        window.location.href = `/notebook/{{ nb_id }}?session_id=${sessionId}`;
+    }
+
+    function renameChatSession(sessionId, currentTitle) {
+        const newTitle = prompt('Enter new chat title:', currentTitle || 'New Chat');
+        if (newTitle && newTitle.trim() && newTitle !== currentTitle) {
+            fetch(`/rename_chat_session/{{ nb_id }}/${sessionId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: newTitle.trim() })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        showToast('Chat renamed successfully', 'success');
+                        setTimeout(() => location.reload(), 500);
+                    } else {
+                        throw new Error('Failed to rename');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error renaming chat:', error);
+                    showToast('Failed to rename chat', 'error');
+                });
+        }
+    }
+
+    function deleteChatSession(sessionId) {
+        if (confirm('Are you sure you want to delete this chat? This action cannot be undone.')) {
+            fetch(`/delete_chat_session/{{ nb_id }}/${sessionId}`, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (response.ok) {
+                        showToast('Chat deleted successfully', 'success');
+                        // If we're deleting the current session, redirect to new chat
+                        if ('{{ current_session_id }}' === sessionId) {
+                            createNewChat();
+                        } else {
+                            location.reload();
+                        }
+                    } else {
+                        throw new Error('Failed to delete');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting chat:', error);
+                    showToast('Failed to delete chat', 'error');
+                });
+        }
+    }
+
+    // Refresh chat sessions list periodically
+    setInterval(() => {
+        fetch(`/get_chat_sessions/{{ nb_id }}`)
+            .then(response => response.json())
+            .then(sessions => {
+                updateChatSessionsList(sessions);
+            });
+    }, 30000); // Refresh every 30 seconds
+
+    function updateChatSessionsList(sessions) {
+        const sessionsList = document.getElementById('chatSessionsList');
+        const currentSessionId = '{{ current_session_id }}';
+
+        if (!sessions || sessions.length === 0) {
+            sessionsList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-comments"></i>
+                    <h4>No chats yet</h4>
+                    <p>Start a new chat to begin</p>
+                </div>`;
+            return;
+        }
+
+        let html = '';
+        sessions.forEach(session => {
+            const isActive = session.session_id === currentSessionId;
+            const title = session.title || 'New Chat';
+            const time = session.last_activity ? session.last_activity.slice(0, 16) : '';
+
+            html += `
+            <div class="chat-history-item ${isActive ? 'active' : ''}"
+                onclick="switchChatSession('${session.session_id}')">
+                <div class="info">
+                    <div class="title">${escapeHtml(title)}</div>
+                    <div class="meta">${time}</div>
+                    <div class="preview">Click to open this chat</div>
+                </div>
+                <div class="session-actions">
+                    <button class="btn btn-sm btn-link rename-session-btn"
+                        onclick="renameChatSession('${session.session_id}', '${escapeHtml(title)}'); event.stopPropagation()"
+                        title="Rename">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="btn btn-sm btn-link delete-session-btn"
+                        onclick="deleteChatSession('${session.session_id}'); event.stopPropagation()"
+                        title="Delete">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>`;
+        });
+
+        sessionsList.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 </script>
 {% endblock %}
@@ -524,13 +499,15 @@
                 </svg>
             </div>
             <h4>Start a conversation</h4>
-            <p class="text-muted">Ask questions about your selected documents</p>
+            <p>Ask questions about your selected documents</p>
+            <p class="mt-2 text-muted">Current Chat: {{ current_session_id }}</p>
         </div>
         {% endif %}
     </div>
 
     <div class="chat-input-container">
         <form method="POST" id="chatForm">
+            <input type="hidden" name="session_id" value="{{ current_session_id }}">
             <div id="selectedSourcesContainer"></div>
             <div class="chat-input-wrapper">
                 <textarea name="message" placeholder="Ask a question about your sources..." required id="messageInput"
@@ -545,33 +522,17 @@
                 </div>
             </div>
             <div class="chat-footer">
-                <small class="text-muted">AI responses are based on selected sources only</small>
+                <small>AI responses are based on selected sources only</small>
             </div>
         </form>
     </div>
 </div>
 
 <style>
-    /* Chat History Styles */
-    .chat-area {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        background-color: #fafafa;
-    }
-
-    .chat-history {
-        flex: 1;
-        overflow-y: auto;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-    }
-
     .message-row {
         display: flex;
         width: 100%;
+        margin-bottom: 24px;
     }
 
     .user-message-row {
@@ -641,12 +602,12 @@
     .sender-name {
         font-size: 13px;
         font-weight: 600;
-        color: #374151;
+        color: #d0d0d0;
     }
 
     .message-time {
         font-size: 12px;
-        color: #9ca3af;
+        color: #888;
     }
 
     .message-bubble {
@@ -655,7 +616,7 @@
         position: relative;
         word-wrap: break-word;
         overflow-wrap: break-word;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     .user-bubble {
@@ -665,8 +626,8 @@
     }
 
     .ai-bubble {
-        background-color: white;
-        border: 1px solid #e5e7eb;
+        background-color: #1a1a1a;
+        border: 1px solid #333;
         border-bottom-left-radius: 4px;
     }
 
@@ -679,45 +640,16 @@
     .ai-message-content {
         font-size: 14px;
         line-height: 1.6;
-        color: #374151;
+        color: #e0e0e0;
     }
 
     .ai-message-content p {
         margin-bottom: 12px;
+        color: #e0e0e0;
     }
 
     .ai-message-content p:last-child {
         margin-bottom: 0;
-    }
-
-    .ai-message-content table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 16px 0;
-        font-size: 13px;
-    }
-
-    .ai-message-content th,
-    .ai-message-content td {
-        border: 1px solid #e5e7eb;
-        padding: 8px 12px;
-        text-align: left;
-    }
-
-    .ai-message-content th {
-        background-color: #f9fafb;
-        font-weight: 600;
-    }
-
-    .ai-message-content tr:nth-child(even) {
-        background-color: #f9fafb;
-    }
-
-    .ai-message-content hr {
-        border: none;
-        height: 1px;
-        background-color: #e5e7eb;
-        margin: 20px 0;
     }
 
     .message-actions {
@@ -725,7 +657,7 @@
         gap: 8px;
         margin-top: 16px;
         padding-top: 16px;
-        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .action-btn {
@@ -743,30 +675,29 @@
     }
 
     .copy-btn {
-        color: #6b7280;
-        background-color: #f3f4f6;
+        color: #aaa;
+        background-color: #333;
     }
 
     .copy-btn:hover {
-        background-color: #e5e7eb;
-        color: #374151;
+        background-color: #444;
+        color: #ffffff;
     }
 
     .save-btn {
-        color: #3b82f6;
-        background-color: #eff6ff;
+        color: #60a5fa;
+        background-color: #1e3a8a;
     }
 
     .save-btn:hover {
-        background-color: #dbeafe;
-        color: #1d4ed8;
+        background-color: #1e40af;
+        color: #93c5fd;
     }
 
     .action-btn i {
         font-size: 12px;
     }
 
-    /* Empty State */
     .empty-chat-state {
         display: flex;
         flex-direction: column;
@@ -778,7 +709,7 @@
     }
 
     .empty-chat-icon {
-        color: #9ca3af;
+        color: #666;
         margin-bottom: 20px;
         opacity: 0.5;
     }
@@ -786,27 +717,20 @@
     .empty-chat-state h4 {
         font-size: 18px;
         font-weight: 600;
-        color: #374151;
+        color: #e0e0e0;
         margin-bottom: 8px;
     }
 
-    .empty-chat-state .text-muted {
-        color: #9ca3af;
+    .empty-chat-state p {
+        color: #888;
         font-size: 14px;
-    }
-
-    /* Chat Input */
-    .chat-input-container {
-        border-top: 1px solid #e5e7eb;
-        background-color: white;
-        padding: 16px 20px;
     }
 
     .chat-input-wrapper {
         display: flex;
         align-items: flex-end;
-        background-color: white;
-        border: 1px solid #e5e7eb;
+        background-color: #2a2a2a;
+        border: 1px solid #444;
         border-radius: 12px;
         padding: 12px 12px 12px 16px;
         transition: all 0.2s;
@@ -814,7 +738,7 @@
 
     .chat-input-wrapper:focus-within {
         border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
     }
 
     #messageInput {
@@ -829,10 +753,11 @@
         resize: none;
         line-height: 1.5;
         font-family: inherit;
+        color: #e0e0e0;
     }
 
     #messageInput::placeholder {
-        color: #9ca3af;
+        color: #888;
     }
 
     .chat-input-actions {
@@ -871,108 +796,26 @@
         margin-top: 12px;
     }
 
-    .chat-footer .text-muted {
+    .chat-footer small {
         font-size: 12px;
-        color: #9ca3af;
+        color: #888;
     }
 
-    /* Note item styles */
-    .note-item {
-        position: relative;
-        transition: all 0.2s;
-    }
-
-    .note-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-    }
-
-    .note-delete-btn {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 24px;
-        height: 24px;
-        border-radius: 4px;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        background-color: #fef2f2;
-        color: #ef4444;
-        border: 1px solid #fecaca;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .note-delete-btn:hover {
-        background-color: #fee2e2;
-        color: #dc2626;
-        transform: scale(1.1);
-    }
-
-    .note-item:hover .note-delete-btn {
-        display: flex;
-    }
-
-    /* Scrollbar Styling */
     .chat-history::-webkit-scrollbar {
         width: 8px;
     }
 
     .chat-history::-webkit-scrollbar-track {
-        background: transparent;
+        background: #1a1a1a;
     }
 
     .chat-history::-webkit-scrollbar-thumb {
-        background: #d1d5db;
+        background: #444;
         border-radius: 4px;
     }
 
     .chat-history::-webkit-scrollbar-thumb:hover {
-        background: #9ca3af;
-    }
-
-    /* Animation for new notes in Studio */
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-        .chat-history {
-            padding: 12px;
-            gap: 16px;
-        }
-
-        .message-wrapper {
-            max-width: 95%;
-        }
-
-        .chat-input-container {
-            padding: 12px;
-        }
-
-        .message-bubble {
-            padding: 12px;
-        }
-
-        .avatar {
-            width: 28px;
-            height: 28px;
-            font-size: 12px;
-        }
-
-        .note-delete-btn {
-            display: flex !important;
-        }
+        background: #555;
     }
 </style>
 
@@ -992,7 +835,6 @@
         const text = messageContent.textContent;
 
         navigator.clipboard.writeText(text).then(() => {
-            // Show feedback
             const originalHTML = button.innerHTML;
             button.innerHTML = '<i class="fas fa-check"></i>';
             button.classList.add('copied');
@@ -1012,7 +854,6 @@
         const messageContent = messageBubble.querySelector('.ai-message-content');
         const text = messageContent.textContent.trim();
 
-        // Create a new note with the message content
         fetch('/save_note/{{ nb_id }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1023,7 +864,6 @@
         })
             .then(response => response.json())
             .then(data => {
-                // Show feedback
                 const originalHTML = button.innerHTML;
                 button.innerHTML = '<i class="fas fa-check"></i><span>Saved</span>';
                 button.classList.add('saved');
@@ -1033,7 +873,6 @@
                     button.classList.remove('saved');
                 }, 2000);
 
-                // Refresh notes list in studio panel WITHOUT page reload
                 refreshStudioNotesList();
             })
             .catch(err => {
@@ -1045,33 +884,29 @@
             });
     }
 
-    // Function to refresh Studio notes list without page reload
+    // Function to refresh Studio notes list
     function refreshStudioNotesList() {
         fetch(`/notes_list/{{ nb_id }}`)
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to load notes');
-                return response.json();
-            })
+            .then(response => response.json())
             .then(notes => {
                 const notesList = document.getElementById('notesList');
                 const noteEditor = document.getElementById('noteEditor');
 
-                // Only update if notes list is visible (editor not open)
                 if (notesList && noteEditor.style.display === 'none') {
                     notesList.innerHTML = '';
 
                     if (!notes || notes.length === 0) {
                         notesList.innerHTML = `
-                            <div class="text-center text-muted py-5">
-                                <i class="fas fa-sticky-note fa-3x mb-3 opacity-50"></i>
-                                <p>No notes yet. Click "Add note" to create one.</p>
+                            <div class="text-center py-5">
+                                <i class="fas fa-sticky-note fa-3x mb-3 opacity-50" style="color: #666;"></i>
+                                <p class="text-muted">No notes yet. Click "Add note" to create one.</p>
                             </div>`;
                         return;
                     }
 
                     notes.forEach(note => {
                         const div = document.createElement('div');
-                        div.className = 'note-item p-3 border rounded mb-2 bg-white border shadow-sm';
+                        div.className = 'note-item';
                         div.style.cursor = 'pointer';
 
                         const title = escapeHtml(note.title || 'Untitled Note');
@@ -1081,32 +916,24 @@
                         }
 
                         div.innerHTML = `
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div style="flex: 1; padding-right: 30px;">
-                                    <strong>${title}</strong>
-                                    <small class="d-block text-muted">${createdAtString}</small>
-                                </div>
-                                <button class="note-delete-btn" onclick="deleteNote(${note.id}, event)" title="Delete note">
-                                    <i class="fas fa-trash-alt fa-xs"></i>
-                                </button>
-                            </div>`;
+                            <div class="info">
+                                <div class="title">${title}</div>
+                                <div class="meta">${createdAtString}</div>
+                            </div>
+                            <button class="btn btn-sm btn-link delete-btn"
+                                onclick="deleteNote(${note.id}); event.stopPropagation()"
+                                title="Delete note">
+                                <i class="fas fa-times"></i>
+                            </button>`;
 
-                        // Add click handler to open note (but not when delete button is clicked)
                         div.addEventListener('click', function (e) {
-                            // Only open note if the delete button wasn't clicked
-                            if (!e.target.closest('.note-delete-btn')) {
+                            if (!e.target.closest('.delete-btn')) {
                                 openNote(note.id);
                             }
                         });
 
                         notesList.appendChild(div);
                     });
-
-                    // Add animation for the new note
-                    const lastNote = notesList.lastElementChild;
-                    if (lastNote) {
-                        lastNote.style.animation = 'fadeInUp 0.5s ease-out';
-                    }
                 }
             })
             .catch(err => {
@@ -1116,31 +943,23 @@
 
     // Delete a note
     function deleteNote(noteId, event) {
-        if (event) {
-            event.stopPropagation();
-        }
+        if (event) event.stopPropagation();
 
         if (confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
-            fetch(`/delete_note/${noteId}`, {
-                method: 'DELETE'
-            })
+            fetch(`/delete_note/${noteId}`, { method: 'DELETE' })
                 .then(response => {
                     if (response.ok) {
-                        // Remove the note from the UI immediately
                         const noteElement = event ? event.target.closest('.note-item') : null;
                         if (noteElement) {
                             noteElement.style.opacity = '0';
                             noteElement.style.transform = 'translateX(20px)';
                             setTimeout(() => {
                                 noteElement.remove();
-                                // Refresh the list to ensure consistency
                                 refreshStudioNotesList();
                             }, 300);
                         } else {
                             refreshStudioNotesList();
                         }
-
-                        // Show success message
                         showToast('Note deleted successfully', 'success');
                     } else {
                         showToast('Failed to delete note', 'error');
@@ -1167,7 +986,6 @@
 
     // Show toast notification
     function showToast(message, type = 'info') {
-        // Create toast container if it doesn't exist
         let toastContainer = document.getElementById('toast-container');
         if (!toastContainer) {
             toastContainer = document.createElement('div');
@@ -1184,7 +1002,6 @@
             document.body.appendChild(toastContainer);
         }
 
-        // Create toast
         const toast = document.createElement('div');
         const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
         toast.style.cssText = `
@@ -1192,7 +1009,7 @@
             color: white;
             padding: 12px 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             animation: slideIn 0.3s ease-out;
             max-width: 300px;
             word-wrap: break-word;
@@ -1202,33 +1019,21 @@
             <span>${message}</span>
         </div>`;
 
-        // Add slideIn animation
         const style = document.createElement('style');
         style.textContent = `
             @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
             }
             @keyframes fadeOut {
-                from {
-                    opacity: 1;
-                }
-                to {
-                    opacity: 0;
-                }
+                from { opacity: 1; }
+                to { opacity: 0; }
             }
         `;
         document.head.appendChild(style);
 
         toastContainer.appendChild(toast);
 
-        // Remove toast after 3 seconds
         setTimeout(() => {
             toast.style.animation = 'fadeOut 0.3s ease-out';
             setTimeout(() => {
@@ -1239,16 +1044,6 @@
         }, 3000);
     }
 
-    // escapeHtml to prevent injection when inserting HTML from JSON
-    function escapeHtml(unsafe) {
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
     // Auto-resize textarea
     const messageInput = document.getElementById('messageInput');
     if (messageInput) {
@@ -1257,7 +1052,6 @@
             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
         });
 
-        // Handle Enter key (submit on Enter, new line on Shift+Enter)
         messageInput.addEventListener('keydown', function (e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -1272,7 +1066,6 @@
     document.getElementById('chatForm')?.addEventListener('submit', function (e) {
         const messageInput = document.getElementById('messageInput');
         if (messageInput && messageInput.value.trim()) {
-            // Add loading state
             const sendBtn = document.getElementById('sendBtn');
             if (sendBtn) {
                 sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -1309,59 +1102,93 @@
     document.addEventListener('DOMContentLoaded', function () {
         scrollToBottom();
 
-        // Focus input
         const messageInput = document.getElementById('messageInput');
         if (messageInput && !messageInput.value) {
             messageInput.focus();
         }
 
-        // Update sources container
         updateSelectedSources();
-
-        // Load notes on page load
         refreshStudioNotesList();
     });
 </script>
 {% endblock %}
 
 {% block studio_panel %}
-<div class="studio-panel">
+<div class="studio-panel resizable">
     <div class="studio-header d-flex justify-content-between align-items-center px-3">
         <h3 class="m-0">Studio</h3>
-        <button class="btn btn-primary btn-sm" onclick="newNote()">
+        <button class="btn btn-primary btn-sm" onclick="newNote()"
+            style="background-color: #3b82f6; border-color: #3b82f6;">
             <i class="fas fa-plus me-1"></i> Add note
         </button>
     </div>
 
     <div class="studio-content" id="studioContent">
-        <!-- Notes List (initially empty, will be populated by JavaScript) -->
         <div id="notesList" style="display: block;">
-            <!-- Notes will be loaded dynamically -->
-            <div class="text-center text-muted py-5" id="notesLoading">
-                <i class="fas fa-spinner fa-spin fa-3x mb-3 opacity-50"></i>
-                <p>Loading notes...</p>
+            <div class="text-center py-5" id="notesLoading">
+                <i class="fas fa-spinner fa-spin fa-3x mb-3 opacity-50" style="color: #666;"></i>
+                <p class="text-muted">Loading notes...</p>
             </div>
         </div>
 
-        <!-- Rich Text Editor (hidden by default) -->
-        <div id="noteEditor" style="display:none;">
+        <div id="noteEditor" style="display:none; background-color: #1a1a1a; padding: 20px; height: 100%;">
             <input type="text" id="noteTitle" class="form-control form-control-lg mb-3"
-                placeholder="Note title (optional)" autocomplete="off">
+                placeholder="Note title (optional)" autocomplete="off"
+                style="background-color: #2a2a2a; border-color: #444; color: #e0e0e0;">
             <div id="quillEditor" style="height: 380px;"></div>
             <div class="mt-3 text-end">
-                <button class="btn btn-secondary me-2" onclick="closeEditor()">Cancel</button>
-                <button class="btn btn-success" onclick="saveNote()">Save Note</button>
+                <button class="btn btn-secondary me-2" onclick="closeEditor()"
+                    style="background-color: #444; border-color: #555; color: #e0e0e0;">Cancel</button>
+                <button class="btn btn-success" onclick="saveNote()"
+                    style="background-color: #10b981; border-color: #10b981;">Save Note</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Quill.js -->
-<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<style>
+    .studio-panel .ql-toolbar.ql-snow {
+        border: 1px solid #444 !important;
+        background-color: #2a2a2a !important;
+        border-radius: 4px 4px 0 0;
+    }
+
+    .studio-panel .ql-container.ql-snow {
+        border: 1px solid #444 !important;
+        border-top: none !important;
+        background-color: #1a1a1a !important;
+        border-radius: 0 0 4px 4px;
+        color: #e0e0e0 !important;
+    }
+
+    .studio-panel .ql-editor {
+        color: #e0e0e0 !important;
+        min-height: 300px;
+    }
+
+    .studio-panel .ql-editor.ql-blank::before {
+        color: #888 !important;
+    }
+
+    .studio-panel .ql-snow .ql-stroke {
+        stroke: #aaa !important;
+    }
+
+    .studio-panel .ql-snow .ql-fill {
+        fill: #aaa !important;
+    }
+
+    .studio-panel .ql-snow .ql-picker {
+        color: #aaa !important;
+    }
+
+    .studio-panel .ql-snow .ql-picker-options {
+        background-color: #2a2a2a !important;
+        border: 1px solid #444 !important;
+    }
+</style>
 
 <script>
-    // Initialize Quill Editor
     const quill = new Quill('#quillEditor', {
         theme: 'snow',
         placeholder: 'Start writing your note...',
@@ -1379,6 +1206,15 @@
                 ['clean']
             ]
         }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(() => {
+            const editor = document.querySelector('#quillEditor .ql-editor');
+            if (editor) {
+                editor.style.color = '#e0e0e0';
+            }
+        }, 100);
     });
 
     let currentNoteId = null;
@@ -1401,15 +1237,21 @@
                 quill.root.innerHTML = data.content || '';
                 document.getElementById('notesList').style.display = 'none';
                 document.getElementById('noteEditor').style.display = 'block';
+
+                setTimeout(() => {
+                    const editor = document.querySelector('#quillEditor .ql-editor');
+                    if (editor) {
+                        editor.style.color = '#e0e0e0';
+                    }
+                }, 50);
             })
-            .catch(() => alert('Failed to load note'));
+            .catch(() => showToast('Failed to load note', 'error'));
     }
 
     function closeEditor() {
         currentNoteId = null;
         document.getElementById('noteEditor').style.display = 'none';
         document.getElementById('notesList').style.display = 'block';
-        // Refresh notes list after closing editor
         refreshStudioNotesList();
     }
 
@@ -1430,11 +1272,12 @@
                 if (response.ok) {
                     closeEditor();
                     refreshStudioNotesList();
+                    showToast('Note saved successfully', 'success');
                 } else {
-                    alert('Save failed');
+                    showToast('Save failed', 'error');
                 }
             })
-            .catch(() => alert('Save failed'));
+            .catch(() => showToast('Save failed', 'error'));
     }
 </script>
 {% endblock %}
